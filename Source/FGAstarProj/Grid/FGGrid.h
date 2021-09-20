@@ -22,7 +22,11 @@ public:
 	AFGNode* CurrentNode;
 	AFGNode* GoalNode;
 	TArray<AFGNode*> NodesList;
-
+	bool StartNodeSelected;
+	bool GoalNodeSelected;
+	bool IsReset;
+	float Timer;
+	
 	UPROPERTY(EditDefaultsOnly)
 		int Width;
 	UPROPERTY(EditDefaultsOnly)
@@ -31,8 +35,10 @@ public:
 		TSubclassOf<AFGNode> NodeClass;
 	
 	void MakeGrid();
+	void ResetGrid();
 	void GetNeighbours(int X, int Y);
 	void FindPath();
 	int GetHScore(int X, int Y);
 	bool HasOpenNodes();
+
 };

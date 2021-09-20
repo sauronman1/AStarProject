@@ -46,5 +46,5 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 		UMaterial* CorrectM;
 
-	void SetNeighbours(int Width, int Height, TArray<AFGNode> NodesList);
+	
 };

@@ -8,12 +8,12 @@ AFGGrid::AFGGrid()
 
 }
 
+
 // Called when the game starts or when spawned
 void AFGGrid::BeginPlay()
 {
 	Super::BeginPlay();
 	MakeGrid();
-	FindPath();
 }
 
 // Called every frame
@@ -21,6 +21,9 @@ void AFGGrid::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	Timer += DeltaTime;
+	FindPath();
+	ResetGrid();
 }
 
 void AFGGrid::MakeGrid()
@@ -31,26 +34,14 @@ void AFGGrid::MakeGrid()
 		for(int x = 0; x < Width; x++)
 		{
 			FTransform SpawnTransform;
-			SpawnTransform.SetLocation(FVector(x * 100,y * 100, 0));
+			SpawnTransform.SetLocation(FVector(x * 150,y * 150, 0));
 			AFGNode* Node = GetWorld()->SpawnActor<AFGNode>(NodeClass, SpawnTransform);
 			Node->XIndex = x;
 			Node->YIndex = y;
 
 			Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->UncheckedM);
 			Node->NodeType = NodeType::UNCHECKED;
-			if(x == 1 && y == 1)
-			{
-				Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->OpenedM);
-				Node->NodeType = NodeType::OPEN;
-				CurrentNode = Node;
-			}
-			if(x == 5 && y == 4)
-			{
-				Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->GoalM);
-				Node->NodeType = NodeType::UNCHECKED;
-				Node->isGoal = true;
-				GoalNode = Node;
-			}
+			
 			if(x == 3 && y > -1 && y < 5)
 			{
 				Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->BlockedM);
@@ -61,13 +52,30 @@ void AFGGrid::MakeGrid()
 	}
 }
 
+void AFGGrid::ResetGrid()
+{
+	if(IsReset && Timer > 5)
+	{
+		for(int y = 0; y < Height; y++)
+		{
+			for(int x = 0; x < Width; x++)
+			{
+				AFGNode* Node = NodesList[y * Width + x];
+				if(Node->NodeType != NodeType::BLOCKED)
+				{
+					Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->UncheckedM);
+					Node->NodeType = NodeType::UNCHECKED;
+				}
+			}
+		}
+		IsReset = false;
+	}
+}
+
+
 void AFGGrid::GetNeighbours(int X, int Y)
 {
 	TArray<FVector> AllDirections;
-	// AllDirections.Add(FVector(1,1,0));
-	// AllDirections.Add(FVector(1,-1,0));
-	// AllDirections.Add(FVector(-1,1,0));
-	// AllDirections.Add(FVector(-1,-1,0));
 	AllDirections.Add(FVector(0,1,0));
 	AllDirections.Add(FVector(1,0,0));
 	AllDirections.Add(FVector(0,-1,0));
@@ -90,62 +98,69 @@ void AFGGrid::GetNeighbours(int X, int Y)
 
 void AFGGrid::FindPath()
 {
-	
-	while (CurrentNode->isGoal != true && HasOpenNodes())
+	if(GoalNodeSelected)
 	{
+		while (CurrentNode->isGoal != true && HasOpenNodes())
+		{
 		
-		GetNeighbours(CurrentNode->XIndex, CurrentNode->YIndex);
-		int CurrentFScore = TNumericLimits<int32>::Max();
-		AFGNode* NextCurrentNode = nullptr;
-		for(int i = 0; i<CurrentNode->NeighbourNodes.Num(); i++)
-		{
-			if(CurrentNode->NeighbourNodes[i] != nullptr && CurrentNode->NeighbourNodes[i]->NodeType != NodeType::CLOSED)
+			GetNeighbours(CurrentNode->XIndex, CurrentNode->YIndex);
+			int CurrentFScore = TNumericLimits<int32>::Max();
+			AFGNode* NextCurrentNode = nullptr;
+			for(int i = 0; i<CurrentNode->NeighbourNodes.Num(); i++)
 			{
-				
-				AFGNode* CurrentNeighbour = CurrentNode->NeighbourNodes[i];
-				if(CurrentNeighbour->NodeType != NodeType::OPEN)
+				if(CurrentNode->NeighbourNodes[i] != nullptr && CurrentNode->NeighbourNodes[i]->NodeType != NodeType::CLOSED)
 				{
-					CurrentNeighbour->HScore = GetHScore(CurrentNeighbour->XIndex, CurrentNeighbour->YIndex);
-					CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
-					CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
-					CurrentNeighbour->NodeType = NodeType::OPEN;
-					//CurrentNeighbour->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentNeighbour->OpenedM);
-					CurrentNeighbour->Parent = CurrentNode;
+				
+					AFGNode* CurrentNeighbour = CurrentNode->NeighbourNodes[i];
+					if(CurrentNeighbour->NodeType != NodeType::OPEN)
+					{
+						CurrentNeighbour->HScore = GetHScore(CurrentNeighbour->XIndex, CurrentNeighbour->YIndex);
+						CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
+						CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
+						CurrentNeighbour->NodeType = NodeType::OPEN;
+						//CurrentNeighbour->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentNeighbour->OpenedM);
+						CurrentNeighbour->Parent = CurrentNode;
 
-				}
-				else if(CurrentNeighbour->NodeType == NodeType::OPEN && CurrentNeighbour->Parent != nullptr && CurrentNeighbour->Parent->GScore > CurrentNode->GScore)
-				{
-					CurrentNeighbour->HScore = GetHScore(CurrentNeighbour->XIndex, CurrentNeighbour->YIndex);
-					CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
-					CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
-					CurrentNeighbour->Parent = CurrentNode;
-				}
+					}
+					else if(CurrentNeighbour->NodeType == NodeType::OPEN && CurrentNeighbour->Parent != nullptr && CurrentNeighbour->Parent->GScore > CurrentNode->GScore)
+					{
+						CurrentNeighbour->HScore = GetHScore(CurrentNeighbour->XIndex, CurrentNeighbour->YIndex);
+						CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
+						CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
+						CurrentNeighbour->Parent = CurrentNode;
+					}
 				
 				
-			}
-		}
-
-		for(int i = 0; i < NodesList.Num(); i++)
-		{
-			if(NodesList[i]->NodeType == NodeType::OPEN)
-			{
-				if(CurrentFScore > NodesList[i]->FScore)
-				{
-					CurrentFScore = NodesList[i]->FScore;
-					NextCurrentNode = NodesList[i];
 				}
 			}
+
+			for(int i = 0; i < NodesList.Num(); i++)
+			{
+				if(NodesList[i]->NodeType == NodeType::OPEN)
+				{
+					if(CurrentFScore > NodesList[i]->FScore)
+					{
+						CurrentFScore = NodesList[i]->FScore;
+						NextCurrentNode = NodesList[i];
+					}
+				}
+			}
+			CurrentNode->NodeType = NodeType::CLOSED;
+			CurrentNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentNode->ClosedM);
+			CurrentNode = NextCurrentNode;
 		}
-		CurrentNode->NodeType = NodeType::CLOSED;
-		CurrentNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentNode->ClosedM);
-		CurrentNode = NextCurrentNode;
-	}
 	
-	AFGNode* CurrentFinishedNode = CurrentNode;
-	while(CurrentFinishedNode->Parent != nullptr)
-	{
-		CurrentFinishedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentFinishedNode->CorrectM);
-		CurrentFinishedNode = CurrentFinishedNode->Parent;
+		AFGNode* CurrentFinishedNode = CurrentNode;
+		while(CurrentFinishedNode->Parent != nullptr && CurrentNode->isGoal == true)
+		{
+			CurrentFinishedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentFinishedNode->CorrectM);
+			CurrentFinishedNode = CurrentFinishedNode->Parent;
+		}
+
+		GoalNodeSelected = false;
+		StartNodeSelected = false;
+		Timer = 0;
+		IsReset = true;
 	}
 }
 
@@ -163,5 +178,6 @@ bool AFGGrid::HasOpenNodes()
 	}
 	return false;
 }
+
 
 
