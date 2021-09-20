@@ -22,7 +22,14 @@ void AFGGrid::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	Timer += DeltaTime;
-	FindPath();
+	if(GoalNodeSelected)
+	{
+		FindPath();
+		GoalNodeSelected = false;
+		StartNodeSelected = false;
+		Timer = 0;
+		IsReset = true;
+	}
 	ResetGrid();
 }
 
@@ -65,6 +72,17 @@ void AFGGrid::ResetGrid()
 				{
 					Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->UncheckedM);
 					Node->NodeType = NodeType::UNCHECKED;
+					Node->GScore = 0;
+					Node->HScore = 0;
+					Node->FScore = 0;
+					Node->Parent = nullptr;
+					if(Node->IsGoal == true)
+					{
+						Node->IsGoal = false;
+						GoalNode = nullptr;
+					}
+					if(Node->IsStart == true)
+						Node->IsStart = false;
 				}
 			}
 		}
@@ -98,9 +116,8 @@ void AFGGrid::GetNeighbours(int X, int Y)
 
 void AFGGrid::FindPath()
 {
-	if(GoalNodeSelected)
-	{
-		while (CurrentNode->isGoal != true && HasOpenNodes())
+	
+		while (CurrentNode->IsGoal != true && HasOpenNodes())
 		{
 		
 			GetNeighbours(CurrentNode->XIndex, CurrentNode->YIndex);
@@ -118,7 +135,6 @@ void AFGGrid::FindPath()
 						CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
 						CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
 						CurrentNeighbour->NodeType = NodeType::OPEN;
-						//CurrentNeighbour->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentNeighbour->OpenedM);
 						CurrentNeighbour->Parent = CurrentNode;
 
 					}
@@ -151,17 +167,14 @@ void AFGGrid::FindPath()
 		}
 	
 		AFGNode* CurrentFinishedNode = CurrentNode;
-		while(CurrentFinishedNode->Parent != nullptr && CurrentNode->isGoal == true)
+		while(CurrentFinishedNode->Parent != nullptr && CurrentNode->IsGoal == true)
 		{
 			CurrentFinishedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentFinishedNode->CorrectM);
 			CurrentFinishedNode = CurrentFinishedNode->Parent;
 		}
 
-		GoalNodeSelected = false;
-		StartNodeSelected = false;
-		Timer = 0;
-		IsReset = true;
-	}
+		
+	
 }
 
 int AFGGrid::GetHScore(int X, int Y)

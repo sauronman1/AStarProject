@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerController.h"
 #include "FGAstarProj/Grid/FGGRid.h"
 #include "Kismet/GameplayStatics.h"
+#include "Navigation/PathFollowingComponent.h"
 
 AFGPlayer::AFGPlayer()
 {
@@ -63,20 +64,22 @@ void AFGPlayer::SelectNode()
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, FString::Printf(TEXT("Trace Hit: %s"), *HitResult.Actor->GetName()));
 		AFGNode* SelectedNode = Cast<AFGNode>(HitResult.Actor);
-		if(SelectedNode == nullptr) {return;}
+		if(SelectedNode == nullptr || SelectedNode->NodeType == NodeType::BLOCKED) {return;}
 
 		if(!CurrentGridActor->StartNodeSelected)
 		{
 			SelectedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, SelectedNode->OpenedM);
 			SelectedNode->NodeType = NodeType::OPEN;
+			SelectedNode->IsStart = true;
 			CurrentGridActor->CurrentNode = SelectedNode;
 			CurrentGridActor->StartNodeSelected = true;
+			
 		}
-		else if(!CurrentGridActor->GoalNodeSelected && CurrentGridActor->StartNodeSelected)
+		else if(!CurrentGridActor->GoalNodeSelected && CurrentGridActor->StartNodeSelected && SelectedNode->IsStart != true)
 		{
 			SelectedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, SelectedNode->GoalM);
 			SelectedNode->NodeType = NodeType::UNCHECKED;
-			SelectedNode->isGoal = true;
+			SelectedNode->IsGoal = true;
 			CurrentGridActor->GoalNode = SelectedNode;
 			CurrentGridActor->GoalNodeSelected = true;
 		}

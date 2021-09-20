@@ -1,3 +1,4 @@
+#pragma once
 #include "Components/BoxComponent.h"
 #include "FGNode.generated.h"
 
@@ -20,7 +21,8 @@ public:
 
 	int XIndex = -1;
 	int YIndex = -1;
-	bool isGoal;
+	bool IsGoal;
+	bool IsStart;
 	
 	FVector Position;
 	int GScore = 0;
