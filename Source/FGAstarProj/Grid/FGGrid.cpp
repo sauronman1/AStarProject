@@ -79,8 +79,8 @@ void AFGGrid::MakeGrid()
 				Node->XIndex = x;
 				Node->YIndex = y;
 
-				Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->BlockedM);
-				Node->NodeType = NodeType::BLOCKED;
+				Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->UncheckedM);
+				Node->NodeType = NodeType::UNCHECKED;
 
 				if(NodesList[y * Width + x] != nullptr)
 				{
