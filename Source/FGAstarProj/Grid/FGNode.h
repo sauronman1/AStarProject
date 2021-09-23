@@ -17,7 +17,8 @@ class AFGNode : public AActor
 	GENERATED_BODY()
 public:
 	AFGNode();
-	NodeType NodeType = NodeType::UNCHECKED;
+	UPROPERTY(EditAnywhere)
+		NodeType NodeType = NodeType::UNCHECKED;
 
 	int XIndex = -1;
 	int YIndex = -1;
@@ -28,11 +29,14 @@ public:
 	int GScore = 0;
 	int HScore = 0;
 	int FScore = 0;
-	
-	TArray<AFGNode*> NeighbourNodes;
+
+	UPROPERTY()
+		TArray<AFGNode*> NeighbourNodes;
 
 	AFGNode* Parent;
 
+	UPROPERTY(EditAnywhere)
+		int TileScore = 0;
 	UPROPERTY(EditDefaultsOnly)
 		UMaterial* UncheckedM;
 	UPROPERTY(EditDefaultsOnly)

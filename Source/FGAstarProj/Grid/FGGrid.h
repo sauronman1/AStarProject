@@ -18,18 +18,23 @@ public:
 	AFGGrid();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-
+	virtual void OnConstruction(const FTransform& Transform) override;
+	
 	AFGNode* CurrentNode;
 	AFGNode* GoalNode;
-	TArray<AFGNode*> NodesList;
+	UPROPERTY()
+		TArray<AFGNode*> NodesList;
 	bool StartNodeSelected;
 	bool GoalNodeSelected;
 	bool IsReset;
-	float Timer;
-	
-	UPROPERTY(EditDefaultsOnly)
+	float Timer = 5;
+	float TileCost;
+
+	UPROPERTY(EditAnywhere)
+		int BorderSpace;
+	UPROPERTY(EditAnywhere)
 		int Width;
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 		int Height;
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<AFGNode> NodeClass;

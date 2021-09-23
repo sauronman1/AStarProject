@@ -8,11 +8,34 @@ AFGGrid::AFGGrid()
 
 }
 
+void AFGGrid::OnConstruction(const FTransform& Transform)
+{
+	if(NodesList.Num() == 0)
+		NodesList.SetNum(Width * Height);
+	
+	for(int i = 0; i<NodesList.Num(); i++)
+	{
+		if(NodesList[i] != nullptr)
+			NodesList[i]->Destroy();
+	}
+	
+	MakeGrid();
+}
+
 
 // Called when the game starts or when spawned
 void AFGGrid::BeginPlay()
 {
 	Super::BeginPlay();
+	if(NodesList.Num() == 0)
+		NodesList.SetNum(Width * Height);
+
+	for(int i = 0; i<NodesList.Num(); i++)
+	{
+		if(NodesList[i] != nullptr)
+			NodesList[i]->Destroy();
+	}
+	
 	MakeGrid();
 }
 
@@ -35,26 +58,44 @@ void AFGGrid::Tick(float DeltaTime)
 
 void AFGGrid::MakeGrid()
 {
-	NodesList.SetNum(Width * Height);
-	for(int y = 0; y < Height; y++)
+	if(Width > 0 && Height > 0)
 	{
-		for(int x = 0; x < Width; x++)
+		NodesList.SetNum(Width * Height);
+		float LastGridCordX = GetActorLocation().X;
+		float LastGridCordY = GetActorLocation().Y;
+		AFGNode* Node = nullptr;
+		for(int y = 0; y < Height; y++)
 		{
-			FTransform SpawnTransform;
-			SpawnTransform.SetLocation(FVector(x * 150,y * 150, 0));
-			AFGNode* Node = GetWorld()->SpawnActor<AFGNode>(NodeClass, SpawnTransform);
-			Node->XIndex = x;
-			Node->YIndex = y;
-
-			Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->UncheckedM);
-			Node->NodeType = NodeType::UNCHECKED;
-			
-			if(x == 3 && y > -1 && y < 5)
+			for(int x = 0; x < Width; x++)
 			{
+				FTransform SpawnTransform;
+			
+				SpawnTransform.SetLocation(FVector(LastGridCordX,LastGridCordY, 0));
+
+				Node = GetWorld()->SpawnActor<AFGNode>(NodeClass, SpawnTransform);
+
+				LastGridCordX = Node->GetActorLocation().X + BorderSpace;
+			
+				Node->XIndex = x;
+				Node->YIndex = y;
+
 				Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->BlockedM);
 				Node->NodeType = NodeType::BLOCKED;
+
+				if(NodesList[y * Width + x] != nullptr)
+				{
+					AFGNode* OldNode = NodesList[y * Width + x];
+					Node->NodeType = OldNode->NodeType;
+					Node->TileScore = OldNode->TileScore;
+					if(OldNode->NodeType == NodeType::BLOCKED)
+						Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->BlockedM);
+					else
+						Node->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, Node->UncheckedM);
+				}
+				NodesList[y * Width + x] = Node;
 			}
-			NodesList[y * Width + x] = Node;
+			LastGridCordY = Node->GetActorLocation().Y +BorderSpace;
+			LastGridCordX = GetActorLocation().X;
 		}
 	}
 }
@@ -132,7 +173,7 @@ void AFGGrid::FindPath()
 					if(CurrentNeighbour->NodeType != NodeType::OPEN)
 					{
 						CurrentNeighbour->HScore = GetHScore(CurrentNeighbour->XIndex, CurrentNeighbour->YIndex);
-						CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
+						CurrentNeighbour->GScore = CurrentNeighbour->TileScore + CurrentNode->GScore + TileCost;
 						CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
 						CurrentNeighbour->NodeType = NodeType::OPEN;
 						CurrentNeighbour->Parent = CurrentNode;
@@ -141,7 +182,7 @@ void AFGGrid::FindPath()
 					else if(CurrentNeighbour->NodeType == NodeType::OPEN && CurrentNeighbour->Parent != nullptr && CurrentNeighbour->Parent->GScore > CurrentNode->GScore)
 					{
 						CurrentNeighbour->HScore = GetHScore(CurrentNeighbour->XIndex, CurrentNeighbour->YIndex);
-						CurrentNeighbour->GScore = 1 + CurrentNode->GScore;
+						CurrentNeighbour->GScore = CurrentNeighbour->TileScore + CurrentNode->GScore + TileCost;
 						CurrentNeighbour->FScore = CurrentNeighbour->GScore + CurrentNeighbour->HScore;
 						CurrentNeighbour->Parent = CurrentNode;
 					}
