@@ -32,7 +32,8 @@ public:
 
 	UPROPERTY()
 		TArray<AFGNode*> NeighbourNodes;
-
+	
+	
 	AFGNode* Parent;
 
 	UPROPERTY(EditAnywhere)

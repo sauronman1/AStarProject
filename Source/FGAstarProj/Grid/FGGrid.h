@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 
+#include "FGGridEntity.h"
 #include "FGNode.h"
 #include "GameFramework/Actor.h"
 #include "FGGrid.generated.h"
@@ -24,12 +25,16 @@ public:
 	AFGNode* GoalNode;
 	UPROPERTY()
 		TArray<AFGNode*> NodesList;
+	UPROPERTY()
+		TArray<AFGNode*> PathNodes;
 	bool StartNodeSelected;
 	bool GoalNodeSelected;
 	bool IsReset;
-	float Timer = 5;
 	float TileCost;
+	float Timer = 5.f;
 
+	UPROPERTY(EditAnywhere)
+		float TimeBeforReset = 5.f;
 	UPROPERTY(EditAnywhere)
 		int BorderSpace;
 	UPROPERTY(EditAnywhere)
@@ -38,6 +43,8 @@ public:
 		int Height;
 	UPROPERTY(EditDefaultsOnly)
 		TSubclassOf<AFGNode> NodeClass;
+	UPROPERTY(EditInstanceOnly)
+		AFGGridEntity* GridEntity;
 	
 	void MakeGrid();
 	void ResetGrid();

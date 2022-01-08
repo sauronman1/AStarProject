@@ -102,7 +102,7 @@ void AFGGrid::MakeGrid()
 
 void AFGGrid::ResetGrid()
 {
-	if(IsReset && Timer > 5)
+	if(IsReset && Timer > TimeBeforReset)
 	{
 		for(int y = 0; y < Height; y++)
 		{
@@ -208,14 +208,27 @@ void AFGGrid::FindPath()
 		}
 	
 		AFGNode* CurrentFinishedNode = CurrentNode;
+		PathNodes.SetNum(0);
 		while(CurrentFinishedNode->Parent != nullptr && CurrentNode->IsGoal == true)
 		{
+			PathNodes.Add(CurrentFinishedNode);
 			CurrentFinishedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentFinishedNode->CorrectM);
 			CurrentFinishedNode = CurrentFinishedNode->Parent;
 		}
+		CurrentFinishedNode->FindComponentByClass<UStaticMeshComponent>()->SetMaterial(0, CurrentFinishedNode->CorrectM);
+		PathNodes.Add(CurrentFinishedNode);
 
-		
-	
+	TArray<AFGNode*> ReverseArray;
+
+	for(int i = PathNodes.Num(); i>0; i--)
+	{
+		ReverseArray.Add(PathNodes[i-1]);
+	}
+	PathNodes = ReverseArray;
+	GridEntity->Steps = PathNodes.Num();
+	GridEntity->PathNodes = PathNodes;
+	GridEntity->HasNewPath = true;
+	GridEntity->ChangeDestination();
 }
 
 int AFGGrid::GetHScore(int X, int Y)
